@@ -67,9 +67,9 @@
 
 ### 效果示例：
 
-![image-20250608175731350](C:\Users\26752\AppData\Roaming\Typora\typora-user-images\image-20250608175731350.png)
+![image-20250608175731350](.\概念图1.png)
 
-![image-20250608175740851](C:\Users\26752\AppData\Roaming\Typora\typora-user-images\image-20250608175740851.png)
+![image-20250608175740851](.\概念图2.png)
 
 
 
@@ -79,7 +79,7 @@
 
 ### ER图：
 
-![ER图](D:\AAAstudySpace\22大二下\数据库系统\大作业\ER图.png)
+![ER图](.\ER图.png)
 
 ### 关系模式：
 
