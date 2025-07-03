@@ -1,6 +1,6 @@
 <template>
   <div class="history-view">
-    <h2>历史组队页面</h2>
+    <h2>历史组队</h2>
     
     <div class="filter-section">
       <div class="filter-row">
@@ -10,6 +10,8 @@
           <option value="1">已报名</option>
           <option value="2">已退出</option>
           <option value="3">已完成</option>
+          <option value="4">已解散</option>
+          <option value="5">发起者</option>
         </select>
       </div>
     </div>

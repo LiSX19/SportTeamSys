@@ -1,6 +1,5 @@
 <template>
   <div class="find-team-view">
-    <h2>寻找组队页面</h2>
     
     <!-- 新增筛选区域 -->
     <div class="filter-section">
@@ -36,6 +35,21 @@
           </option>
         </select>
       </div>
+
+      <!-- 新增排序选项 -->
+      <div class="filter-row">
+        <label>排序：</label>
+        <select v-model="sortField">
+          <option value="endtime">按截止时间</option>
+          <option value="runtime">按运动时间</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 增加切换按钮 -->
+    <div class="layout-toggle">
+      <el-button @click="isRowLayout = false" :type="!isRowLayout ? 'primary' : 'default'">卡片视图</el-button>
+      <el-button @click="isRowLayout = true" :type="isRowLayout ? 'primary' : 'default'">列表视图</el-button>
     </div>
     
     <div class="team-list" v-if="filteredTeams.length > 0">
@@ -60,6 +74,8 @@ const sportTypes = ref([]); // 存储运动类型数据
 const filterLevel = ref('');
 const filterStatus = ref('');
 const filterSportType = ref(''); // 新增运动类型筛选条件
+const isRowLayout = ref(false); // 新增：控制布局模式
+const sortField = ref('endtime'); // 新增：排序字段
 
 // 计算属性：获取可用的运动名称（仅包含存在的值并去重）
 const availableSports = computed(() => {
@@ -81,9 +97,13 @@ const filteredTeams = computed(() => {
     return levelMatch && statusMatch && sportTypeMatch;
   });
   
-  // 按 runtime 降序排序
+  // 根据排序字段排序
   return filtered.sort((a, b) => {
-    return new Date(b.runtime) - new Date(a.runtime);
+    if (sortField.value === 'endtime') {
+      return new Date(b.endtime) - new Date(a.endtime);
+    } else {
+      return new Date(b.runtime) - new Date(a.runtime);
+    }
   });
 });
 
@@ -113,6 +133,14 @@ onMounted(async () => {
 <style scoped>
 .find-team-view {
   padding: 20px;
+}
+
+/* 新增切换按钮样式 */
+.layout-toggle {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
 }
 
 /* 新增筛选区域样式 */
@@ -153,5 +181,7 @@ onMounted(async () => {
   flex-wrap: wrap;
   gap: 20px;
   justify-content: center;
+  /* 根据布局模式动态调整 */
+  flex-direction: v-bind("isRowLayout ? 'column' : 'row'");
 }
 </style>

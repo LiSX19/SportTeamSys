@@ -170,15 +170,6 @@ CREATE TABLE `teaminfo` (
     `endtime` DATETIME,                   -- 结束时间
     FOREIGN KEY (`sponsor`) REFERENCES `t_user`(`uid`) -- 外键关联到 `t_user` 表的 `uid` 列
 );
-
--- 添加 sid 列
-ALTER TABLE `t_teaminfo`
-ADD COLUMN `sid` INT NOT NULL;
-
--- 添加外键约束
-ALTER TABLE `t_teaminfo`
-ADD CONSTRAINT `fk_t_teaminfo_sid`
-FOREIGN KEY (`sid`) REFERENCES `t_sportname` (`sid`);
 ```
 
 
@@ -204,7 +195,7 @@ CREATE TABLE `t_teammember` (
     `uid` INT NOT NULL, -- 用户的唯一标识
     `tid` INT NOT NULL, -- 队伍的唯一标识
     `sid` INT NOT NULL, -- 运动项目的唯一标识
-    `mstatus` INT,      -- 成员状态 1.已报名 2.已取消 3.已结束
+    `mstatus` INT,      -- 成员状态 1.已报名 2.已取消 3.已结束 4.已解散
     PRIMARY KEY (`uid`, `tid`, `sid`), -- 复合主键
     FOREIGN KEY (`uid`) REFERENCES `t_user`(`uid`), -- 外键关联到 t_user 表
     FOREIGN KEY (`tid`) REFERENCES `t_teaminfo`(`tid`), -- 外键关联到 t_teaminfo 表
@@ -305,6 +296,28 @@ BEGIN
     END IF;
 END;
 //
+DELIMITER ;
+```
+
+#### 解散队伍时候更新mstatus
+
+```sql
+DELIMITER //
+
+CREATE TRIGGER after_teaminfo_status_update
+AFTER UPDATE ON t_teaminfo
+FOR EACH ROW
+BEGIN
+    -- 检查tstatus是否被更新为2
+    IF NEW.tstatus = 2 AND (OLD.tstatus IS NULL OR OLD.tstatus != 2) THEN
+        -- 更新t_teammember表中相关记录
+        -- 条件：tid匹配且mstatus不为5
+        UPDATE t_teammember
+        SET mstatus = 4
+        WHERE tid = NEW.tid AND (mstatus IS NULL OR mstatus != 5);
+    END IF;
+END//
+
 DELIMITER ;
 ```
 
@@ -639,12 +652,151 @@ tstatus
 - 寻找组队页面
 - 发起组队页面
 - 历史组队页面
-
-### 待完成：
-
-- 组队详情页
-- 排序机制优化
 - 个人信息修改
 - 报名、取消、解散队伍
-- 
+
+
+
+
+
+# PPT展示
+
+## 需求分析
+
+- ### 账号管理系统
+
+  - ##### 注册
+
+  - ##### 登录
+
+  - ##### 编辑个人信息
+
+- ### 组队系统
+
+  - ##### 发起组队
+
+  - ##### 报名、退出、解散队伍
+
+  - ##### 队伍详情页
+
+  - ##### 历史组队
+
+  - ##### 组队搜索
+
+## 开发环境
+
+- #### 前端：HTML、CSS、JavaScript、vue3
+
+- #### 后端：java（Spring Boot + MyBatiplus）
+
+- #### 数据库管理：MySQL Workbench
+
+## 数据库设计
+
+- ### ER图
+
+- ### 关系模式
+
+- ### 视图
+
+- ### event
+
+- ### trigger
+
+## 后端开发
+
+- ### entity层（数据流转）
+
+- ### mapper层（数据库管理）
+
+- ### service层（业务）
+
+- ### controller层（接口）
+
+- ### interceptor层（未实现）
+
+## 前端开发
+
+- ### 页面
+
+  - 主页、登录、注册
+  - 寻找组队
+  - 发起组队
+  - 历史组队
+  - 个人信息
+  - 组队详情页
+
+- ### 筛选功能
+
+  - 根据运动种类筛选
+  - 根据级别筛选
+  - 根据状态筛选
+
+- ### 美观
+
+  - 随机背景图片
+  - hover动效
+  - 可视化展示
+  - 多种排列视图
+
+- ### 登录状态保存
+
+  - 安全登录与退出
+
+## 成果演示
+
+- ### 视频演示
+
+  - 随机背景、注册、登录、安全退出
+  - 个人信息 编辑
+  - 寻找组队页面
+  - 发起组队
+  - 历史组队
+  - 组队详情页
+
+
+
+
+
+
+
+
+
+# 心得
+
+- 使用springboot框架后端开发
+
+  - mybatisplus数据库管理
+
+  - maven包管理器
+  - 多层解耦开发架构
+
+  - 使用springdoc接口工具
+
+- 使用vue3框架前端开发
+
+  - 组件化开发
+  - 数据在父子页面间传递
+  - 动态绑定变量
+  - vue的生命周期
+
+- 辅助工具使用
+  - MySQL Workbench数据库管理工具
+  - Apipost、Apifox接口测试管理软件
+- 前后端交互
+  - 跨域问题
+  - 数据结构统一
+  - get和post的区别
+  - 接口提供策略
+- 安全登录与退出
+- event与trigger的实际应用
+
+# BUG和不足
+
+- 目前没有拦截器设置，无法处理用户恶意大量插入数据
+- 没有进行多用户同时操作测试，可能会出现并发错误
+- 没有提供找回密码功能
+- 部分页面及时响应不稳定，应该优化用户交互流程
+- 未提供删除记录功能，用户后期使用不方便
+- 数据库安全性不足，没有备份策略和垃圾数据的清洗功能
 

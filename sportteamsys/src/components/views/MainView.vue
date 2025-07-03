@@ -2,7 +2,7 @@
   <div class="main-container">
     <!-- 左侧侧栏 -->
     <el-aside width="200px" class="sidebar">
-      <h3>运动组队系统</h3>
+      <h3 style="margin-left: 20px; font-size: x-large;">运动组队系统</h3>
       <el-menu
         :default-active="activeTab"
         @select="handleMenuSelect"
@@ -71,8 +71,6 @@ defineExpose({
   position: fixed;
   top: 80px; /* 放在导航栏下方 */
   border-radius: 10px;
-  left: -20px;
-  padding-left: 30px;
   height: calc(100vh - 60px); /* 减去导航栏高度 */
   background-color: rgba(255, 255, 255, 0.5);
   box-shadow: 2px 0 6px rgba(0, 0, 0, 0.1);

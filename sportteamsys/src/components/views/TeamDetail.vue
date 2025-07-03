@@ -1,6 +1,12 @@
 <template>
   <div class="team-detail">
     <h1>{{ teamInfo.sname }} 组队详情</h1>
+    
+    <!-- 新增：显示运动名称和运动种类 -->
+    <div class="sport-info">
+      <p><strong>运动：</strong>{{ sportName }}</p>
+      <p><strong>运动分类：</strong>{{ sportType }}</p>
+    </div>
 
     <div class="basic-info">
       <div class="info-item">
@@ -36,6 +42,8 @@
       <ul v-else>
         <li v-for="member in members" :key="member.nickname">
           <span>{{ member.nickname }}</span>
+          <!-- 新增电话显示 -->
+          <span class="member-phone">电话: {{ member.phone }}</span>
           <span class="mstatus" :class="getMStatusClass(member.mstatus)">
             {{ getMStatusText(member.mstatus) }}
           </span>
@@ -67,7 +75,7 @@
       <el-button 
         v-if="memberStatus?.mstatus === 5"
         type="danger"
-        @click="quitTeam"
+        @click="disbandTeam"
       >
         解散队伍
       </el-button>
@@ -85,17 +93,23 @@ export default {
       teamInfo: {},
       members: [],
       loading: false,
-      memberStatus: null
+      memberStatus: null,
+      sportsData: [] // 存储运动类型数据
     };
   },
   async created() {
     const tid = this.$route.params.tid; // 从路由中获取 tid
     
     try {
-      const response = await axios.get(`http://localhost:8080/team/${tid}`);
-      this.teamInfo = response.data;
+      const [teamResponse, sportResponse] = await Promise.all([
+        axios.get(`http://localhost:8080/team/${tid}`),
+        axios.get('http://localhost:8080/sport/findAll')
+      ]);
+      
+      this.teamInfo = teamResponse.data;
+      this.sportsData = sportResponse.data;
     } catch (error) {
-      console.error('获取团队详情失败:', error);
+      console.error('获取团队详情或运动类型失败:', error);
       this.$message.error('加载团队信息失败');
     }
 
@@ -143,6 +157,17 @@ export default {
         5: '大师'
       };
       return levels[this.teamInfo.level] || '未知';
+    },
+    // 新增：获取对应 sid 的运动信息
+    sportInfo() {
+      const sid = this.teamInfo.sid;
+      return this.sportsData.find(sport => sport.sid === sid) || {};
+    },
+    sportName() {
+      return this.sportInfo.sname || '未知运动';
+    },
+    sportType() {
+      return this.sportInfo.stype || '未知类型';
     }
   },
   methods: {
@@ -207,7 +232,10 @@ export default {
         // 从 Vuex 中动态获取用户 ID
         const user = this.$store.getters.currentUser;
         const uid = user.uid;
+        const tid = this.$route.params.tid;
         console.log('用户ID:', uid);
+        console.log("tid:", this.tid);
+        
 
         // 检查 uid 是否为空
         if (!uid) {
@@ -220,7 +248,7 @@ export default {
           'http://localhost:8080/member/insertOrUpdate',
           {
             uid: uid, // 动态获取的用户ID
-            tid: this.tid,
+            tid: tid,
             mstatus: 1 // 已报名状态
           }
         );
@@ -242,7 +270,7 @@ export default {
           'http://localhost:8080/member/insertOrUpdate',
           {
             uid: this.$store.getters.currentUser.uid, // 添加uid
-            tid: this.tid, // 添加tid
+            tid: this.$route.params.tid, // 添加tid
             mstatus: 2 // 明确指定mstatus为2
           }
         );
@@ -257,94 +285,193 @@ export default {
         this.$message.error('退出失败，请重试');
       }
     },
-    // 解散队伍（目前只实现UI，功能不实现）
-    quitTeam() {
-      this.$message.info('该功能暂未实现');
+    // 解散队伍
+    async disbandTeam() {
+      try {
+        // 构造更新数据，保持其他属性不变，只更新 tstatus 为 2
+        const updatedTeam = {
+          ...this.teamInfo,
+          tstatus: 2 // 更新状态为解散
+        };
+
+        // 发送 PUT 请求到指定接口
+        const response = await axios.put(
+          `http://localhost:8080/team/update/${this.teamInfo.tid}`,
+          updatedTeam
+        );
+
+        if (response.data) {
+          // 更新本地状态
+          this.teamInfo.tstatus = 2;
+
+          // 提示用户操作成功
+          this.$message.success('队伍解散成功');
+        }
+      } catch (error) {
+        console.error('解散队伍失败:', error);
+        this.$message.error('解散队伍失败，请重试');
+      }
     }
   }
 };
 </script>
 
 <style scoped>
+.sport-info {
+  margin-bottom: 20px;
+  background-color: #ffffff;
+  border-radius: 10px;
+  padding: 15px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.sport-info p {
+  margin: 8px 0;
+  font-size: 1rem;
+  color: #333;
+}
+
 .team-detail {
   max-width: 800px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 30px;
   margin-top: 100px;
+  background: linear-gradient(to right, #e0ecff, #d6f0ff);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-radius: 12px;
 }
 
 .basic-info {
-  background-color: #f9f9f9;
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 20px;
+  background-color: #ffffff;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 25px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
 .info-item {
-  margin-bottom: 10px;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
 }
 
 .label {
   font-weight: bold;
   color: #333;
+  width: 100px;
+  flex-shrink: 0;
 }
 
 .value {
-  color: #666;
+  color: #555;
+  font-size: 1rem;
 }
 
 .member-list {
-  margin-bottom: 20px;
-  background-color: rgba(255, 255, 255, 0.8);
-  border-radius: 8px;
+  background-color: #ffffff;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 25px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
 .member-list ul {
   list-style-type: none;
-  padding: 10px;
+  padding: 0;
 }
 
 .member-list li {
   display: flex;
   justify-content: space-between;
-  padding: 8px 0;
+  align-items: center;
+  padding: 15px 0;
   border-bottom: 1px solid #eee;
 }
 
-.status, .mstatus {
-  padding: 2px 8px;
-  border-radius: 4px;
+.member-list li span {
+  flex: 1;
+  padding: 6px 8px;
+  font-size: 0.95rem;
 }
 
-.status.recruiting, .mstatus.registered {
-  background-color: #fdf6ec;
-  color: #e6a23c;
+/* 昵称列 */
+.member-list li span:first-child {
+  font-weight: bold;
+  color: #333;
 }
 
-.status.disbanded, .mstatus.disbanded {
+/* 电话列 */
+.member-list li .member-phone {
+  color: #666;
+}
+
+/* 状态列 */
+.member-list li .mstatus {
+  text-align: center;
+}
+
+.status,
+.mstatus span {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: inline-block;
+
+}
+
+.status.recruiting,
+.mstatus.registered {
+  background-color: #fef0f0;
+  color: #fa7777;
+  border-radius: 10px;
+}
+
+.status.disbanded,
+.mstatus.disbanded {
   background-color: #fef0f0;
   color: #f56c6c;
+  border-radius: 10px;
 }
 
-.status.completed, .mstatus.completed {
+.status.completed,
+.mstatus.completed {
   background-color: #f0f9eb;
   color: #67c23a;
+  border-radius: 10px;
 }
 
-.status.full, .mstatus.creator {
+.status.full,
+.mstatus.creator {
   background-color: #ecf5ff;
   color: #409eff;
+  border-radius: 10px;
 }
 
-.status.unknown, .mstatus.quit, .mstatus.unknown {
+.status.unknown,
+.mstatus.quit,
+.mstatus.unknown {
   background-color: #f0f0f0;
   color: #909399;
+  border-radius: 10px;
 }
 
 /* 按钮区域样式 */
 .action-buttons {
   margin-top: 20px;
   display: flex;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+
+.el-button {
+  border-radius: 6px;
+  transition: all 0.2s ease-in-out;
+}
+
+.el-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 </style>
